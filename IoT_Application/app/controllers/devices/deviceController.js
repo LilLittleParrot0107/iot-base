@@ -35,6 +35,7 @@ let publisherDeleteDevice = (device, topic) => {
             action: "delete",
             device_owner: device.device_owner,
             home_id: device.home_id,
+            device_status: device.device_status,
         };
         mqtt.deleteDeviceMqtt(data, topic);
     } catch (error) {
