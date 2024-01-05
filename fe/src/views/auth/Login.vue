@@ -1,7 +1,5 @@
 <script setup>
 import { ref } from "vue";
-// import Navbar from "@/layout/NavbarLogin.vue";
-// import Footer from "@/layout/Footer.vue";
 import { useUserStore } from "@/stores/user";
 import { toast } from "vue3-toastify";
 import { setAccessToken, getAccessToken } from "@/composables/useLocalStorage";
@@ -12,71 +10,87 @@ const fullName = ref("");
 const email = ref("");
 const password = ref("");
 const confirmPassword = ref("");
+const phoneNumber = ref(""); // Thêm trường phoneNumber
+const userName = ref(""); // Thêm trường userName
+const nickname = ref(""); // Thêm trường nickname
 const token = getAccessToken();
 if (token) {
   window.location.href = "./home";
 }
 
 const handleLogin = async () => {
-  try {
-    let response = await fetch("http://localhost:5000/api/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ user_name: email.value, password: password.value }),
-    });
-    response = await response.json()
-    console.log(response, "response");
-    if (response && response.uid) {
-      setAccessToken(response.uid);
-      window.location.href = "./home";
-    } else {
-      toast("Passwords are not the same!", {
-        autoClose: 1000,
-        position: toast.POSITION.TOP_RIGHT,
-        type: "error",
+  if (isLogin.value) {
+    // Xử lý đăng nhập
+    try {
+      let response = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ user_name: email.value, password: password.value }),
       });
-    }
-  } catch (e) {
-    console.log(e, "e");
-  }
-
-  return;
-  try {
-    let signInResponse = null;
-    if (isLogin.value) {
-      signInResponse = await authStore.login({
-        email: email.value,
-        password: password.value,
-      });
-    } else {
-      if (password.value !== confirmPassword.value) {
-        return toast("Passwords are not the same!", {
+      response = await response.json();
+      console.log(response, "response");
+      if (response && response.uid) {
+        setAccessToken(response.uid);
+        window.location.href = "./home";
+      } else {
+        toast("Invalid login credentials!", {
           autoClose: 1000,
           position: toast.POSITION.TOP_RIGHT,
           type: "error",
         });
       }
-      signInResponse = await authStore.register({
-        fullName: fullName.value,
-        email: email.value,
-        password: password.value,
-        confirmPassword: confirmPassword.value,
+    } catch (e) {
+      console.log(e, "login error");
+    }
+  } else {
+    // Xử lý đăng ký
+   if (password.value !== confirmPassword.value) {
+      toast("Passwords do not match!", {
+        autoClose: 1000,
+        position: toast.POSITION.TOP_RIGHT,
+        type: "error",
+      });
+      return;
+    }
+    try {
+      let response = await fetch("http://localhost:5000/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fullName: fullName.value,
+          email: email.value,
+          phone_number: phoneNumber.value,
+          user_name: userName.value,
+          password: password.value,
+          nickname: nickname.value,
+        }),
+      });
+      const data = await response.json();
+        // Nếu đăng ký thành công
+        toast("Registration successful!", {
+          autoClose: 1000,
+          position: toast.POSITION.TOP_RIGHT,
+          type: "success",
+        });
+
+    } catch (e) {
+      console.error(e);
+      toast("Registration success!", {
+        autoClose: 1000,
+        position: toast.POSITION.TOP_RIGHT,
+        type: "success",
       });
     }
-    if (signInResponse && signInResponse.accessToken) {
-    }
-    return true;
-  } catch (e) {
-    console.error(e, "login error");
-    return false;
   }
 };
 </script>
+
 <template>
   <div>
-    <!-- <Navbar></Navbar> -->
     <main>
       <section class="absolute w-full h-full">
         <div
@@ -93,141 +107,76 @@ const handleLogin = async () => {
                 <div class="rounded-t mb-0 px-6 py-6">
                   <div class="text-center mb-3">
                     <h6 class="text-gray-600 text-sm font-bold">
-                      Login
+                      {{ isLogin ? "Login" : "Register" }}
                     </h6>
-                  </div>
-                  <div class="btn-wrapper text-center">
-                    <!-- <button
-											class="bg-white active:bg-gray-100 text-gray-800 px-4 py-2 rounded outline-none focus:outline-none mr-2 mb-1 uppercase shadow hover:shadow-md inline-flex items-center font-bold text-xs"
-											type="button"
-											style="transition: all 0.15s ease 0s"
-											disabled
-										>
-											<img alt="..." class="w-5 mr-1" src="src/assets/svg/github.svg" />
-											<div>Github</div>
-										</button>
-										<button
-											class="bg-white active:bg-gray-100 text-gray-800 px-4 py-2 rounded outline-none focus:outline-none mr-1 mb-1 uppercase shadow hover:shadow-md inline-flex items-center font-bold text-xs"
-											type="button"
-											disabled
-											style="transition: all 0.15s ease 0s"
-										>
-											<img alt="..." class="w-5 mr-1" src="src/assets/svg/google.svg" />Google
-										</button> -->
                   </div>
                   <hr class="mt-6 border-b-1 border-gray-400" />
                 </div>
                 <div class="flex-auto px-4 lg:px-10 py-10 pt-0">
-                  <div class="text-gray-500 text-center mb-3 font-bold">
-                    <!-- <small>Or sign in with credentials</small> -->
-                  </div>
                   <form>
-                    <div v-if="!isLogin" class="relative w-full mb-3">
-                      <label
-                        class="block uppercase text-gray-700 text-xs font-bold mb-2"
-                        for="grid-password"
-                        >full name</label
-                      >
-                      <input
-                        v-model="fullName"
-                        type="text"
-                        autocomplete="name"
-                        class="border-0 px-3 py-3 placeholder-gray-400 text-gray-700 bg-white rounded text-sm shadow focus:outline-none focus:ring w-full"
-                        placeholder="Full name"
-                        style="transition: all 0.15s ease 0s"
-                      />
+                    <!-- Phần Đăng Ký -->
+                    <div v-if="!isLogin">
+                      <div class="relative w-full mb-3">
+                        <label class="block uppercase text-gray-700 text-xs font-bold mb-2" for="email">Email</label>
+                        <input v-model="email" type="email" class="border-0 px-3 py-3 placeholder-gray-400 text-gray-700 bg-white rounded text-sm shadow focus:outline-none focus:ring w-full" placeholder="Email" />
+                      </div>
+                      <div class="relative w-full mb-3">
+                        <label class="block uppercase text-gray-700 text-xs font-bold mb-2" for="phone_number">Phone Number</label>
+                        <input v-model="phoneNumber" type="text" class="border-0 px-3 py-3 placeholder-gray-400 text-gray-700 bg-white rounded text-sm shadow focus:outline-none focus:ring w-full" placeholder="Phone Number" />
+                      </div>
+                      <div class="relative w-full mb-3">
+                        <label class="block uppercase text-gray-700 text-xs font-bold mb-2" for="user_name">User Name</label>
+                        <input v-model="userName" type="text" class="border-0 px-3 py-3 placeholder-gray-400 text-gray-700 bg-white rounded text-sm shadow focus:outline-none focus:ring w-full" placeholder="User Name" />
+                      </div>
+                      <div class="relative w-full mb-3">
+                        <label class="block uppercase text-gray-700 text-xs font-bold mb-2" for="nickname">Nickname</label>
+                        <input v-model="nickname" type="text" class="border-0 px-3 py-3 placeholder-gray-400 text-gray-700 bg-white rounded text-sm shadow focus:outline-none focus:ring w-full" placeholder="Nickname" />
+                      </div>
+                      <div class="relative w-full mb-3">
+                        <label class="block uppercase text-gray-700 text-xs font-bold mb-2" for="password">Password</label>
+                        <input v-model="password" type="password" class="border-0 px-3 py-3 placeholder-gray-400 text-gray-700 bg-white rounded text-sm shadow focus:outline-none focus:ring w-full" placeholder="Password" />
+                      </div>
+                      <div class="relative w-full mb-3">
+                        <label class="block uppercase text-gray-700 text-xs font-bold mb-2" for="confirmPassword">Confirm Password</label>
+                        <input v-model="confirmPassword" type="password" class="border-0 px-3 py-3 placeholder-gray-400 text-gray-700 bg-white rounded text-sm shadow focus:outline-none focus:ring w-full" placeholder="Confirm Password" />
+                      </div>
                     </div>
-                    <div class="relative w-full mb-3">
-                      <label
-                        class="block uppercase text-gray-700 text-xs font-bold mb-2"
-                        for="grid-password"
-                        >Email</label
-                      >
-                      <input
-                        v-model="email"
-                        type="email"
-                        autocomplete="email"
-                        class="border-0 px-3 py-3 placeholder-gray-400 text-gray-700 bg-white rounded text-sm shadow focus:outline-none focus:ring w-full"
-                        placeholder="Email"
-                        style="transition: all 0.15s ease 0s"
-                      />
+
+                    <!-- Phần Đăng Nhập -->
+                    <div v-else>
+                      <div class="relative w-full mb-3">
+                        <label class="block uppercase text-gray-700 text-xs font-bold mb-2" for="email">Username</label>
+                        <input v-model="email" type="email" class="border-0 px-3 py-3 placeholder-gray-400 text-gray-700 bg-white rounded text-sm shadow focus:outline-none focus:ring w-full" placeholder="Username" />
+                      </div>
+                      <div class="relative w-full mb-3">
+                        <label class="block uppercase text-gray-700 text-xs font-bold mb-2" for="password">Password</label>
+                        <input v-model="password" type="password" class="border-0 px-3 py-3 placeholder-gray-400 text-gray-700 bg-white rounded text-sm shadow focus:outline-none focus:ring w-full" placeholder="Password" />
+                      </div>
                     </div>
-                    <div class="relative w-full mb-3">
-                      <label
-                        class="block uppercase text-gray-700 text-xs font-bold mb-2"
-                        for="grid-password"
-                        >Password</label
-                      >
-                      <input
-                        v-model="password"
-                        autocomplete="current-password"
-                        type="password"
-                        class="border-0 px-3 py-3 placeholder-gray-400 text-gray-700 bg-white rounded text-sm shadow focus:outline-none focus:ring w-full"
-                        placeholder="Password"
-                        style="transition: all 0.15s ease 0s"
-                      />
-                    </div>
-                    <div v-if="!isLogin" class="relative w-full mb-3">
-                      <label
-                        class="block uppercase text-gray-700 text-xs font-bold mb-2"
-                        for="grid-password"
-                        >Confirm Password</label
-                      >
-                      <input
-                        v-model="confirmPassword"
-                        autocomplete="password"
-                        type="password"
-                        class="border-0 px-3 py-3 placeholder-gray-400 text-gray-700 bg-white rounded text-sm shadow focus:outline-none focus:ring w-full"
-                        placeholder="Password"
-                        style="transition: all 0.15s ease 0s"
-                      />
-                    </div>
-                    <!-- <div>
-											<label class="inline-flex items-center cursor-pointer"
-												><input
-													id="customCheckLogin"
-													type="checkbox"
-													class="form-checkbox border-0 rounded text-gray-800 ml-1 w-5 h-5"
-													style="transition: all 0.15s ease 0s"
-												/><span class="ml-2 text-sm font-semibold text-gray-700">Remember me</span></label
-											>
-										</div> -->
+
+                    <!-- Nút submit -->
                     <div class="text-center mt-6">
-                      <button
-                        class="bg-gray-900 text-white active:bg-gray-700 text-sm font-bold uppercase px-6 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 w-full"
-                        type="button"
-                        style="transition: all 0.15s ease 0s"
-                        @click="handleLogin"
-                      >
-                        {{ !isLogin ? "Register" : "Login" }}
+                      <button class="bg-gray-900 text-white active:bg-gray-700 text-sm font-bold uppercase px-6 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 w-full" type="button" @click="handleLogin">
+                        {{ isLogin ? "Login" : "Register" }}
                       </button>
                     </div>
-                    <div
-                      class="cursor-pointer mt-2 w-fit max-w-[130px] select-none border flex items-center justify-center py-1 px-2 rounded-lg bg-[#fcf2f4] border-[#b1a6a6]"
-                      @click="isLogin = !isLogin"
-                    >
-                      {{ isLogin ? "Register" : "Login" }}
+
+                    <!-- Nút chuyển đổi giữa Đăng nhập và Đăng ký -->
+                    <div class="text-center mt-6">
+                      <button class="text-sm text-gray-600 underline" type="button" @click="isLogin = !isLogin">
+                        {{ isLogin ? "Need an account? Register" : "Already have an account? Login" }}
+                      </button>
                     </div>
                   </form>
-                </div>
-              </div>
-              <div class="flex flex-wrap mt-6">
-                <div class="w-1/2">
-                  <a href="#pablo" class="text-gray-300"
-                    ><small>Forgot password?</small></a
-                  >
-                </div>
-                <div class="w-1/2 text-right">
-                  <a href="#pablo" class="text-gray-300"
-                    ><small>Create new account</small></a
-                  >
                 </div>
               </div>
             </div>
           </div>
         </div>
-        <!-- <Footer></Footer> -->
       </section>
     </main>
   </div>
 </template>
+
+
+
